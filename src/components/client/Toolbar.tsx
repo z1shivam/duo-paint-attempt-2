@@ -26,6 +26,7 @@ export default function Toolbar() {
         brushSize,
         isEraserOn,
         toggleEraser,
+        clearCanvas,
     } = useDrawingStore();
 
     return (
@@ -41,23 +42,34 @@ export default function Toolbar() {
                 ))}
             </div>
             <div className="flex w-full items-center py-2 md:w-fit md:py-0">
-                <div className="mr-2 h-1 w-1 rounded-full bg-slate-900"></div>
                 <Slider
                     value={[brushSize]}
-                    max={10}
+                    min={1}
+                    max={30}
                     step={1}
                     className="w-full md:w-44"
                     onValueChange={(value) => {
                         setBrushSize(value[0] as number);
                     }}
                 />
-                <div className="ml-3 h-4 w-4 rounded-full bg-slate-900"></div>
+                <div className="w-16 flex items-center justify-center">
+                    <div
+                        className="ml-3 rounded-full"
+                        style={{
+                            backgroundColor: `${isEraserOn }`,
+                            width: `${brushSize}px`, // Size matches brushSize
+                            height: `${brushSize}px`, // Keep it a circle
+                        }}
+                    ></div>
+                </div>
             </div>
             <div className="flex w-full items-center justify-between gap-3 sm:justify-start md:w-auto">
                 <Button
                     variant={"outline"}
                     className={`cursor-pointer ${isEraserOn && "bg-slate-900 text-white"}`}
-                    onClick={() => {toggleEraser()}}
+                    onClick={() => {
+                        toggleEraser();
+                    }}
                 >
                     <LuEraser /> erase
                 </Button>
@@ -67,7 +79,11 @@ export default function Toolbar() {
                 <Button variant={"outline"} className="cursor-pointer">
                     <IoMdRedo /> redo
                 </Button>
-                <Button variant={"outline"} className="cursor-pointer">
+                <Button
+                    variant={"outline"}
+                    className="cursor-pointer"
+                    onClick={clearCanvas}
+                >
                     <BiReset /> clear
                 </Button>
             </div>

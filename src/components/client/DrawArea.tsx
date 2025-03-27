@@ -1,6 +1,6 @@
 "use client";
 
-import useDrawingStore from "@/state/useDrawingStore";
+import useDrawingStore, { type Path } from "@/state/useDrawingStore";
 import { useEffect, useRef } from "react";
 
 interface DrawAreaProps {
@@ -10,14 +10,6 @@ interface DrawAreaProps {
     isLocal?: boolean;
 }
 
-interface Path {
-    color: string;
-    brushSize: number;
-    startX: number;
-    startY: number;
-    points: [number, number][];
-}
-
 export default function DrawArea({
     width = 300,
     height = 500,
@@ -25,26 +17,72 @@ export default function DrawArea({
     isLocal = true,
 }: DrawAreaProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const currentPathRef = useRef<Path | null>(null);
     const {
         paths,
-        remotePaths,
         setLocalContext,
         isDrawing,
         setIsDrawing,
+        localContext,
         addPath,
-        addRemotePath,
+        isEraserOn,
         selectedColor,
         brushSize,
+        redrawCanvas,
     } = useDrawingStore();
 
-    // initialize canvas context
     useEffect(() => {
         const canvas = canvasRef.current;
         if (canvas) {
             const canvasContext = canvas.getContext("2d");
-            canvasContext && isLocal && setLocalContext(canvasContext);
+            if (canvasContext && isLocal) {
+                canvasContext.lineCap = "round";
+                canvasContext.lineJoin = "round";
+                canvasContext.strokeStyle = isEraserOn ? "#ffffff" : selectedColor;
+                canvasContext.lineWidth = brushSize;
+                setLocalContext(canvasContext);
+            }
         }
-    }, [isLocal, setLocalContext]);
+    }, [isLocal, setLocalContext, selectedColor, brushSize, isEraserOn]);
+
+    useEffect(() => {
+        redrawCanvas(); // Redraw when component mounts or paths change
+    }, [paths, redrawCanvas]);
+
+    const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
+        if (!isLocal || !localContext) return;
+        const { offsetX, offsetY } = e.nativeEvent;
+        localContext.beginPath();
+        localContext.moveTo(offsetX, offsetY);
+        setIsDrawing(true);
+        currentPathRef.current = {
+            color: isEraserOn ? "#ffffff" : selectedColor,
+            brushSize,
+            startX: offsetX,
+            startY: offsetY,
+            points: [],
+        };
+    };
+
+    const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
+        if (!isDrawing || !localContext) return;
+        const { offsetX, offsetY } = e.nativeEvent;
+        localContext.lineTo(offsetX, offsetY);
+        localContext.stroke();
+        currentPathRef.current &&
+            currentPathRef.current.points.push([offsetX, offsetY]);
+    };
+
+    const stopDrawing = () => {
+        if (!isLocal) return;
+        localContext?.closePath();
+        setIsDrawing(false);
+
+        if (currentPathRef.current) {
+            addPath(currentPathRef.current);
+            currentPathRef.current = null; // Reset for the next stroke
+        }
+    };
 
     return (
         <section className="px-3">
@@ -56,7 +94,11 @@ export default function DrawArea({
                     ref={canvasRef}
                     width={width}
                     height={height}
-                    className={`${isLocal ? "pointer-events-auto" : "pointer-events-none"} bg-red-100`}
+                    className={`${isLocal ? "pointer-events-auto" : "pointer-events-none"} bg-white rounded-md`}
+                    onMouseDown={startDrawing}
+                    onMouseMove={draw}
+                    onMouseUp={stopDrawing}
+                    onMouseOut={stopDrawing}
                 >
                     Enable JavaScript to draw here.
                 </canvas>
