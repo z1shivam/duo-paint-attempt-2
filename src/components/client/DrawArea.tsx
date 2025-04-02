@@ -46,7 +46,7 @@ export default function DrawArea({
     }, [isLocal, setLocalContext, selectedColor, brushSize, isEraserOn]);
 
     useEffect(() => {
-        redrawCanvas(); // Redraw when component mounts or paths change
+        redrawCanvas();
     }, [paths, redrawCanvas]);
 
     const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -80,7 +80,7 @@ export default function DrawArea({
 
         if (currentPathRef.current) {
             addPath(currentPathRef.current);
-            currentPathRef.current = null; // Reset for the next stroke
+            currentPathRef.current = null;  
         }
     };
 
